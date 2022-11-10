@@ -85,33 +85,43 @@ router.get("/occupations", async (req, res) => { // Una vez que las traigamos la
 })
 
 // 🎈 Peticion POST / character === pokemons
-router.post("./characters", async (req, res) => {
-    const { name,
-        nickname,
-        birthday,
-        status,
-        image,
-        createdInData,
-        occupation
-    } = req.body //Hacemos el post con todo lo que nos llega por body === nos llega esto por body
+router.post("/characters", async (req, res) => {
+    try {
 
-    let characterCreated = await Characterr.create({ //CREAR EL PERSONAJE
-        //NO VA 'occupation' por que hay ser la relacion aparte
-        name,
-        nickname,
-        birthday,
-        status,
-        image,
-        createdInData,
-        // Con estos datos creamos el personaje
-    })
-    
-    let occupationDb = await Occupation.findAll({
-        where : {name: occupation}
-    })
+        let { name,
+            nickname,
+            birthday,
+            status,
+            image,
+            createInData,
+            occupation
+        } = req.body; //Hacemos el post con todo lo que nos llega por body === nos llega esto por body
 
-    characterCreated.addOcuppation(occupationDb)
-    res.send("Personaje creadon exito")
+        let characterCreated = await Characterr.create({ //CREAR EL PERSONAJE
+            //NO VA 'occupation' por que hay ser la relacion aparte
+            name,
+            nickname,
+            birthday,
+            status,
+            image,
+            createInData,
+            
+            // Con estos datos creamos el personaje
+        })
+
+        let occupationDb = await Occupation.findAll({ //Encontrar en mi modelo de 'Occupation' todas las que coincidan con el nombre que llega por body
+            // DENTRO DE ESTE MODELO ENCONTRA TODA LAS OCUPACIONES QUE COINCIDAN CON ESTO QUE LE ESTOY PASANDO POR BODY
+            where: { name : occupation } //← occupation que llega por el body
+        })
+
+        //Traerme de la tabla ↓ esto que le paso por parametro
+        characterCreated.addOccupation(occupationDb)
+        res.send("Personaje creado exito")
+
+    } catch (error) {
+        res.send(error)
+        console.log(error);
+    }
 })
 
 // Configurar los routers
