@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const axios = require("axios");
-const { Pokemon, Tipo } = require("../db")
+const { Characterr, Occupation } = require("../db");
+
 // Importar todos los routers;
 // Ejemplo: const authRouter = require('./auth.js');
 // const server = express()
@@ -11,18 +12,18 @@ const router = Router();
 
 // 1° Funcion → Traer los datos de la api
 const getApiInfo = async () => {
-    const apiUrl = await axios.get("https://pokeapi.co/api/v2/pokemon");
+    const apiUrl = await axios.get("https://breakingbadapi.com/api/characters");
 
-    const apiInfo = await apiUrl.data.results.map(e => {
+    const apiInfo = await apiUrl.data.map(e => {
         return {
             name: e.name,
-            url: e.url, //NO LO PIDEN, PERO ES LO UNICO QUE TIENE LA API DE POKEMON (POKE API)
-            life: e.life,
-            attack: e.attack,
-            defense: e.defense,
-            speed: e.speed,
-            height: e.height,
-            weight: e.weight,
+            img: e.img,
+            nickname: e.nickname,
+            status: e.status,
+            id: e.id,
+            occupation: e.occupation.map(e => e),
+            birthday: e.birthday,
+            appearance: e.appearance.map(e => e),
         }
     })
     return apiInfo;
@@ -30,9 +31,9 @@ const getApiInfo = async () => {
 
 // 2° funcion → Traer los datos de la base de datos
 const getDbInfo = async () => {
-    return await Pokemon.findAll({
+    return await Characterr.findAll({
         include: {
-            model: Tipo, // Treamos a 'Tipo' para que haga la relacion //Si creo un pokemon y no incluyo este modelo nunca va a traer el pokemon con el tipo
+            model: Occupation, // Treamos a 'ocupation' para que haga la relacion //Si creo un character y no incluyo este modelo nunca va a traer el character con el ocupation
             attributes: ["name"], // ← ↑ y traeme este atributo del modelo 'Tipo'
             through: {
                 attributes: [] //Sobre o mediante la tabla atributos
@@ -42,34 +43,77 @@ const getDbInfo = async () => {
 }
 
 // 3° funcion → Traer todos los datos de la api y de la base de datos === Concatenando ambos y devolviendola
-const getAllPokemon = async () => {
+const getAllCharacter = async () => {
     const apiInfo = await getApiInfo();
     const dbInfo = await getDbInfo();
     const infoTotal = apiInfo.concat(dbInfo);
     return infoTotal
 }
 
-// 🎈 Peticiones GET/Pokemon: || Peticion por query
-router.get("/pokemon", async (req, res) => {
+// 🎈 Peticiones GET/character: || Peticion por query === pokemons && ?name=".."
+router.get("/characters", async (req, res) => {
     const name = req.query.name // ?name=*****
-    let pokemonTotal = await getAllPokemon();
+    let characterTotal = await getAllCharacter();
     if (name) {                                            //↓ nombre del pokemon
-        let pokemonsName = await pokemonTotal.filter(e => e.name.toLowerCase().includes(name.toLowerCase()))
+        let chatacterName = await characterTotal.filter(e => e.name.toLowerCase().includes(name.toLowerCase())) //includes → por el ejemplo si busco 'jose' y tengo un 'maria jose' === todo lo que le incluya al medio, atras , todo!
+
         // ↓↓ Encontraste algo 
-        pokemonsName.length ? res.status("200").send(pokemonsName) : res.status("404").send("NO EXISTE POKEMON CON ESE NOMBRE")
+        chatacterName.length ? res.status("200").send(chatacterName) : res.status("404").send("NO EXISTE CHARACTER CON ESE NOMBRE")
     }
     // ↓ Si no existe un query 
     else {
-        res.status("200").send(pokemonTotal)
+        res.status("200").send(characterTotal)
     }
 })
 
-// 🎈 SEGUNDA PETICION PARA VER EL SIGUIENTE PASO // GET/TYPES
-router.get("/types", async (req, res) => {
-   
+// 🎈 Peticion GET / occupation === types
+router.get("/occupations", async (req, res) => { // Una vez que las traigamos la guardamos en la base de datos y trabajamos desde alli
+    const occupationApi = await axios.get("https://breakingbadapi.com/api/characters") //Hacemos la peticion a laAPI
+    const occupation = await occupationApi.data.map(e => e.occupation) //Mapeamos a 'occupation'
+    const occEach = occupation.map(e => { //Un mapeo de cada ocupacion
+        for (let i = 0; i < e.length; i++) return e[i]
+    }) //iterar sobre cada elemento
+    occEach.forEach(e => { //Para cada de esos entra el modelo 'Occupation'
+        Occupation.findOrCreate({
+            where: { name: e }
+        })
+    })
+    const allOccupation = await Occupation.findAll(); //Una vez que recorres todos y lo guardamos en la base de datos , las llamamos y despues ↓ las mandamos 
+    res.send(allOccupation)
+
+    // Me traigo la informacion de la API para guardarla en la base de datos y sacarla desde la base de datos
 })
 
- 
+// 🎈 Peticion POST / character === pokemons
+router.post("./characters", async (req, res) => {
+    const { name,
+        nickname,
+        birthday,
+        status,
+        image,
+        createdInData,
+        occupation
+    } = req.body //Hacemos el post con todo lo que nos llega por body === nos llega esto por body
+
+    let characterCreated = await Characterr.create({ //CREAR EL PERSONAJE
+        //NO VA 'occupation' por que hay ser la relacion aparte
+        name,
+        nickname,
+        birthday,
+        status,
+        image,
+        createdInData,
+        // Con estos datos creamos el personaje
+    })
+    
+    let occupationDb = await Occupation.findAll({
+        where : {name: occupation}
+    })
+
+    characterCreated.addOcuppation(occupationDb)
+    res.send("Personaje creadon exito")
+})
+
 // Configurar los routers
 // Ejemplo: router.use('/auth', authRouter);
 
@@ -78,5 +122,5 @@ module.exports = router;
 
 
 
-// 55:00
+// 01:10:00
 // Repaso
