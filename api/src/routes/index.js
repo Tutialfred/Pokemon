@@ -20,10 +20,11 @@ const getApiInfo = async () => {
             img: e.img,
             nickname: e.nickname,
             status: e.status,
-            id: e.id,
+            id: e.char_id,   // EXCEPCION PARA TRAER UN ID
             occupation: e.occupation.map(e => e),
             birthday: e.birthday,
             appearance: e.appearance.map(e => e),
+          
         }
     })
     return apiInfo;
@@ -68,14 +69,14 @@ router.get("/characters", async (req, res) => {
 
 // 🎈 Peticion GET / occupation === types
 router.get("/occupations", async (req, res) => { // Una vez que las traigamos la guardamos en la base de datos y trabajamos desde alli
-    const occupationApi = await axios.get("https://breakingbadapi.com/api/characters") //Hacemos la peticion a laAPI
+    const occupationApi = await axios.get("https://breakingbadapi.com/api/characters") //Hacemos la peticion a la API
     const occupation = await occupationApi.data.map(e => e.occupation) //Mapeamos a 'occupation'
     const occEach = occupation.map(e => { //Un mapeo de cada ocupacion
         for (let i = 0; i < e.length; i++) return e[i]
     }) //iterar sobre cada elemento
-    occEach.forEach(e => { //Para cada de esos entra el modelo 'Occupation'
+    occEach.forEach(e => { //Para cada uno de esos entra el modelo 'Occupation'
         Occupation.findOrCreate({
-            where: { name: e }
+            where: { name : e }
         })
     })
     const allOccupation = await Occupation.findAll(); //Una vez que recorres todos y lo guardamos en la base de datos , las llamamos y despues ↓ las mandamos 
@@ -123,6 +124,22 @@ router.post("/characters", async (req, res) => {
         console.log(error);
     }
 })
+
+// 🎈 Peticion GET / id
+router.get("/characters/:id", async (req, res) =>{
+    const id = req.params.id
+    const characterTotal = await getAllCharacter()
+
+    if(id){
+        let characterId = await characterTotal.filter(e => e.id == id)
+        characterId.length ? 
+        res.status(200).json(characterId) :
+        res.status(404).send(`No se encontro un personaje con el ID ${id}`)
+    }
+})
+
+
+
 
 // Configurar los routers
 // Ejemplo: router.use('/auth', authRouter);
