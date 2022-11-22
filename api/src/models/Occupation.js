@@ -11,3 +11,4 @@ module.exports = (sequelize) => {
     
   },{timestamps:true , createdAt: false, updatedAt: "Ultima Actualizacion!"});
 }
+
