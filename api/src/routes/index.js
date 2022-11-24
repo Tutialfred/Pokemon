@@ -59,7 +59,7 @@ router.get("/characters", async (req, res) => {
         let chatacterName = await characterTotal.filter(e => e.name.toLowerCase().includes(name.toLowerCase())) //includes → por el ejemplo si busco 'jose' y tengo un 'maria jose' === todo lo que le incluya al medio, atras , todo!
 
         // ↓↓ Encontraste algo 
-        chatacterName.length ? res.status("200").send(chatacterName) : res.status("404").send("NO EXISTE CHARACTER CON ESE NOMBRE")
+        chatacterName.length ? res.status("200").send(chatacterName) : res.status("404").send("NO EXISTE CHARACTER CON ESE NOMBRE") 
     }
     // ↓ Si no existe un query 
     else {
@@ -133,7 +133,7 @@ router.get("/characters/:id", async (req, res) =>{
     if(id){
         let characterId = await characterTotal.filter(e => e.id == id)
         characterId.length ? 
-        res.status(200).json(characterId) :
+        res.status(200).send(characterId) :
         res.status(404).send(`No se encontro un personaje con el ID ${id}`)
     }
 })
